@@ -15,15 +15,9 @@ function [T,Y, Yplus, Yminus]=multistage_ddm_fpt_dist(a,s,threshold,x0,x0dist,de
 %Output:
 % T = support of decision time
 % Y = cdf of decision time
-% Yplus = cdf of decision time conditioned on correct decision multiplied
-% by probability of correct decision
-% Yminus = cdf of decision time conditioned on erroneous decision multiplied
-% by probability of error
 
 
 stages=length(deadlines);
-
-% Initialization
 
 % probability of decision before current stage
 
@@ -74,46 +68,28 @@ for stage=1:stages-1
         step=1;
     end
     
-    % Computation of probability of instantaneous correct decision at boundary
     pinst_plus=sum(x0dist(x0>=threshold(stage+1)))*step;
     
-    % Computation of probability of instantaneous incorrect decision at boundary
     pinst_minus=sum(x0dist(x0<=-threshold(stage+1)))*step;
     
-    % Accounting for the change in threshold
-    % If threshold decreases
     if threshold(stage+1)< threshold(stage)
-        % remove the support outside new thresholds
         x0dist(x0 > threshold(stage+1))=[];
         x0dist(x0 < -threshold(stage+1))=[];
         x0(x0 > threshold(stage+1))=[];
         x0(x0 < -threshold(stage+1))=[];
-        % normalize the distribution
         x0dist=x0dist/(sum(x0dist)*step);
     else
-        % if threshold increases
-        % increase the support of x0dist
         x0dist=[x0dist(1:end-1) 0*(x0(end):x0(2)-x0(1): threshold(stage+1))];
         x0dist=[0*(-threshold(stage+1):x0(2)-x0(1): x0(1)) x0dist(2:end)];
         x0=[x0(1:end-1) x0(end):x0(2)-x0(1): threshold(stage+1)];
         x0=[-threshold(stage+1):x0(2)-x0(1): x0(1) x0(2:end)];
     end
     
-    % add probabilities of instantaneous decisions to the cdf value at
-    % deadline
+
     
-    pnd = max(0,1-Y(end));
-    Y(end) = Y(end) + (pinst_plus +pinst_minus)*pnd;
-    Yplus(end)=Yplus(end) + pinst_plus*pnd;
-    Yminus(end) = Yminus(end) + pinst_minus*pnd;
-    
-    tmp=1;
-    if Y(end)>1
-        tmp=Y(end);
-    end
-    Y=Y/tmp;
-    Yplus=Yplus/tmp;
-    Yminus=Yminus/tmp;
+    Y(end) = Y(end) + pinst_plus +pinst_minus;
+    Yplus(end)=Yplus(end) + pinst_plus;
+    Yminus(end) = Yminus(end) + pinst_minus;
     
     weight=Y(end);
     
@@ -146,15 +122,17 @@ Yminus=[Yminus weight_m+cdf_m*(1-weight)];
 T=[T t+deadlines(stages)];
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 function [cdf,cdf_p, cdf_m, t] = ddm_fpt(a,s,z,x0,x0dist,t_end)
+
 
 % Support set for the density 
 
 step_t=0.01;
 
-t1= linspace(0.0001, 0.01,10);
+t1= linspace(0.0001, 0.01,100);
 
 step1=t1(2)-t1(1);
 
@@ -164,7 +142,8 @@ t=[t1, t2];
 
 % Terms in the series solution to the density
 
-N=-5:5;
+N=-50:50;
+
 
 % Lebegue measure for the discretized input density
 
@@ -184,13 +163,14 @@ X0=ones(length(N),1)*x0;
 N=N'*ones(size(x0));
 
 
+
 for kk=1:length(t)
     
     T=t(kk);
     
     % computation of the density of the ddm using series sum
-    prob_vec_p= max(0,sum((exp(a*(z-X0)/s^2).*ssfunc(T, (X0+z)/s, 2*z/s,N))*exp(-a^2*T/2/s^2)));
-    prob_vec_m= max(0,sum((exp(a*(-z-X0)/s^2).*ssfunc(T, (z-X0)/s,2*z/s, N))*exp(-a^2*T/2/s^2)));
+    prob_vec_p= sum((exp(a*(z-X0)/s^2).*ssfunc(T, (X0+z)/s, 2*z/s,N))*exp(-a^2*T/2/s^2));
+    prob_vec_m= sum((exp(a*(-z-X0)/s^2).*ssfunc(T, (z-X0)/s,2*z/s, N))*exp(-a^2*T/2/s^2));
     prob_vec = prob_vec_p + prob_vec_m;
     %sum((exp(a*(-z-X0)/s^2).*ssfunc(T, (z-X0)/s,2*z/s, N) + exp(a*(z-X0)/s^2).*ssfunc(T, (X0+z)/s, 2*z/s,N))*exp(-a^2*T/2/s^2));
     prob(kk)=sum(prob_vec.*x0dist)*step_in;
@@ -204,34 +184,25 @@ cdf1 = cumsum(prob(1:length(t1)))*step1;
 
 cdf2 =cdf1(end) + cumsum(prob(length(t1)+1:end))*step_t;
 
-cdf=[cdf1, cdf2];
+cdf=max(0,[cdf1, cdf2]);
 
 cdf1p = cumsum(prob_p(1:length(t1)))*step1;
 
 cdf2p =cdf1p(end) + cumsum(prob_p(length(t1)+1:end))*step_t;
 
-cdf_p =[cdf1p, cdf2p] ;
+cdf_p =max(0,[cdf1p, cdf2p]) ;
 
 cdf1m = cumsum(prob_m(1:length(t1)))*step1;
 
 cdf2m =cdf1m(end) + cumsum(prob_m(length(t1)+1:end))*step_t;
 
-cdf_m = [cdf1m, cdf2m] ;
+cdf_m = max(0,[cdf1m, cdf2m]) ;
 
-tmp=1;
-
-if ~isempty(cdf) && cdf(end)>1   
-% if cdf(end)>1
-    tmp=cdf(end);
-    cdf=cdf/tmp;   
+if cdf(end)>1
+    
+    cdf=cdf/cdf(end);
+    
 end
-
-cdf_p = cdf_p/tmp;
-cdf_m = cdf_m/tmp;
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 function y=ssfunc(t, u, v, N)
@@ -239,6 +210,11 @@ function y=ssfunc(t, u, v, N)
 % computation of special theta function
 
 y = (v-u+ 2*N.*v)/(sqrt(2*pi)*t^1.5).*exp(-(v-u+2*N.*v).^2/2/t);
+
+
+
+
+
 
 
 

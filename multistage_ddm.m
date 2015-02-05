@@ -24,7 +24,7 @@ step=0.001;
 %thresh=0.5:0.25:4;
 
 thresh=(0.5:0.5:2);
-
+thresh = [1 1 1 1];
 %thresh=0.83976;
 
 % Support of initial condition and its density
@@ -58,6 +58,10 @@ aRT_minus=zeros(size(thresh));
 
 thresh=thresh'*[1 1.5 1.25 1.5];
 
+
+tsim = 0;
+tcomp = 0;
+
 for jj=1:length(thresh)
     
     threshold=thresh(jj,:);
@@ -66,9 +70,9 @@ for jj=1:length(thresh)
     ER=zeros(1,realizations);
     
     % Simulate the multistage DDM
-    
+    tic
     for N=1:realizations
-        
+
         t=0;
         
         x(1)=x0;
@@ -95,7 +99,9 @@ for jj=1:length(thresh)
             
         end
     end
-    
+    tt = toc;
+    tsim = tsim +tt;
+
     % Mean decision time and error rate from Monte Carlo simulation
     mean_RT(jj)=mean(RT);
     
@@ -109,13 +115,15 @@ for jj=1:length(thresh)
     mean_RT_minus(jj)=mean(RTminus);
         
     % Analytical decision time and error rate
-    
+    tic
     [aRT(jj), aER(jj), aRT_plus(jj), aRT_minus(jj)]= multi_stage_ddm_metrics(a ,s, deadlines, threshold, x0, x0dist);
-    
+    tt = toc;
+    tcomp = tcomp + tt;
 end
 
 
-
+tsim
+tcomp
 
 
 
