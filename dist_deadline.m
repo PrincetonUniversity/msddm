@@ -38,7 +38,7 @@ end
 
 % No of discretization points in output distribution
 
-N_out= 1000;
+N_out= 100;
 
 % Support set for the density 
 
