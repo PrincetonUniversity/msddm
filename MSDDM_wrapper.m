@@ -110,8 +110,6 @@ for jj=1:length(thresh)
     
     if runSimulations
 
-        disp('Numerical simulation timing:')
-        tic
         % Simulate the multistage DDM (could be done more efficiently!)
         for N=1:realizations
             
@@ -159,7 +157,6 @@ for jj=1:length(thresh)
         [hFreq_minus{jj},hTimes_minus{jj}] = hist(simRTminus,1000);
         tfinal_minus(jj)= hTimes_minus{jj}(end);
         simCDF_T_minus{jj} = hTimes_minus{jj};  simCDF_Y_minus{jj} = cumsum(hFreq_minus{jj})/realizations;        
-        toc;
     else   
         % Setting all of these to empty in case not running simulations
         simMeanRT(jj)=nan; simMeanER(jj)=nan;
@@ -170,226 +167,141 @@ for jj=1:length(thresh)
         tfinal(jj) = tfinal_fixed; tfinal_plus(jj) = tfinal_fixed; tfinal_minus(jj) = tfinal_fixed;
     end
     
-    disp('Analytic timing:')
-    tic    
     % Analytic decision time and error rate
     [aRT(jj) aER(jj) aRT_plus(jj) aRT_minus(jj)]= multi_stage_ddm_metrics(a ,s, deadlines, threshold, x0, x0dist);
 
     % Analytic CDF (T = RT range, Y = cumul prob)
     [aCDF_T{jj} aCDF_Y{jj} aCDF_Y_plus{jj} aCDF_Y_minus{jj}]=multistage_ddm_fpt_dist(a,s,threshold,x0,x0dist,deadlines,tfinal(jj));
-    toc
 end
 
 
 
 %% Plotting
-if doPlots
-    % Figure with RT/ER/CDF across all choices:
-    figure
-    subplot(1,3,1);
-    hold on
-    if runSimulations
-        plot(thresh, simMeanRT,'k','linewidth',3)
-        scatter(thresh, simMeanRT,45,'k','filled')
-    end
-    plot(thresh, aRT,'r','linewidth',3)
-    scatter(thresh, aRT,45,'r','linewidth',2)
-    axis([.4 length(thresh)+0.6 min(union(aRT,simMeanRT))-0.1 max(union(aRT,simMeanRT))+0.1]);
-    if length(thresh)>1
-        xlabel('Threshold');
-    end
-    ylabel('Expected Decision Time')
-    if runSimulations
-        legend('Simulation', 'Analytic','location','best')
-    else
-        legend('Analytic','location','best')
-    end
-    
-    subplot(1,3,2);
-    hold on
-    if runSimulations
-        plot(thresh, simMeanER,'k','linewidth',3)
-        scatter(thresh, simMeanER,45,'k','filled')
-    end
-    plot(thresh, aER,'r','linewidth',3)
-    scatter(thresh, aER,45,'r','linewidth',2)
-    axis([.4 length(thresh)+0.6 min(union(aER,simMeanER))-0.05 max(union(aER,simMeanER))+0.05]);
-    if length(thresh)>1
-        xlabel('Threshold');
-    end
-    ylabel('Error Rate')
-    if runSimulations
-        legend('Simulation', 'Analytic','location','best')
-    else
-        legend('Analytic','location','best')
-    end
-    
-    % Right now only plotting the CDF for the final threshold
-    subplot(1,3,3);
-    hold on
-    if runSimulations
-        plot(simCDF_T{jj}, simCDF_Y{jj},'k','linewidth',2);
-    end
-    plot(aCDF_T{jj},aCDF_Y{jj}, 'r--','linewidth',2)
-    xlabel('Decision Time'); ylabel('CDF')
-    if runSimulations
-        legend('Simulation', 'Analytic','location','best')
-    else
-        legend('Analytic','location','best')
-    end
-    
-    
-    % Figure with RT/CDF for separate pos/neg threshold crossings:
-    figure
-    subplot(1,2,1);
-    hold on
-    if runSimulations
-        plot(thresh, simMeanRT_plus,'g','linewidth',3)
-        scatter(thresh, simMeanRT_plus,45,'g','filled')
-        plot(thresh, simMeanRT_minus,'r','linewidth',3)
-        scatter(thresh, simMeanRT_minus,45,'r','filled')
-    end
-    hold on
-    plot(thresh, aRT_plus,'g--','linewidth',3)
-    plot(thresh, aRT_minus,'r--','linewidth',3)
-    scatter(thresh, aRT_plus,45,'g','linewidth',2)
-    scatter(thresh, aRT_minus,45,'r','linewidth',2)
-    axis([.4 length(thresh)+0.6 min([aRT_plus,aRT_minus,simMeanRT_plus,simMeanRT_minus])-0.1 max([aRT_plus,aRT_minus,simMeanRT_plus,simMeanRT_minus])+0.1]);
-    if length(thresh)>1
-        xlabel('Threshold');
-    end
-    ylabel('Expected Decision Time')
-    if runSimulations
-        legend('Pos-Simulation','Neg-Simulation', 'Pos-Analytic','Neg-Analytic','location','best')
-    else
-        legend('Pos-Analytic','Neg-Analytic','location','best')
-    end
-    subplot(1,2,2);
-    if runSimulations
-        plot(simCDF_T_plus{jj}, simCDF_Y_plus{jj},'g','linewidth',2);
-        hold on
-        plot(simCDF_T_minus{jj}, simCDF_Y_minus{jj},'r','linewidth',2);
-    end
-    hold on
-    plot(aCDF_T{jj},aCDF_Y_plus{jj}, 'g--','linewidth',2)
-    plot(aCDF_T{jj},aCDF_Y_minus{jj}, 'r--','linewidth',2)
-    xlabel('Decision Time'); ylabel('CDF')
-    if runSimulations
-        legend('Pos-Simulation','Neg-Simulation', 'Pos-Analytic', 'Neg-Analytic','location','best')
-    else
-        legend('Pos-Analytic','Neg-Analytic','location','best')
-    end
-    
-    
-    
-    %% Plots redundant w/ above:
-    
-    figure
-    subplot(1,2,1);
-    if runSimulations
-        plot(simCDF_T{jj}, simCDF_Y{jj},'k','linewidth',2);
-    end
-    hold on
-    plot(aCDF_T{jj},aCDF_Y{jj}, 'r--','linewidth',2)
-    xlabel('Decision Time'); ylabel('CDF')
-    if runSimulations
-        legend('Simulation', 'Analytic','location','best')
-    else
-        legend('Analytic','location','best')
-    end
-    xlim([0 max(aCDF_T{jj})]);
-    ylim([0 1]);
-    set(gca,'TickDir','out');
-    set(gca,'Box','off');
-    
-    subplot(1,2,2);
-    if runSimulations
-        plot(simCDF_T_plus{jj}, simCDF_Y_plus{jj},'g','linewidth',2);
-        hold on
-        plot(simCDF_T_minus{jj}, simCDF_Y_minus{jj},'r','linewidth',2);
-    end
-    hold on
-    plot(aCDF_T{jj},aCDF_Y_plus{jj}, 'g--','linewidth',2)
-    plot(aCDF_T{jj},aCDF_Y_minus{jj}, 'r--','linewidth',2)
-    xlabel('Decision Time'); ylabel('CDF')
-    xlim([0 max(aCDF_T{jj})]);
-    if runSimulations
-        legend('Pos-Simulation','Neg-Simulation', 'Pos-Analytic', 'Neg-Analytic','location','best')
-    else
-        legend('Pos-Analytic','Neg-Analytic','location','best')
-    end
-    set(gca,'TickDir','out');
-    set(gca,'Box','off');
 
-    
-    figure
-    subplot(1,3,1);
-    hold on
-    if runSimulations
-        plot(thresh, simMeanRT,'k','linewidth',3)
-        scatter(thresh, simMeanRT,45,'k','filled')
-    end
-    plot(thresh, aRT,'r','linewidth',3)
-    scatter(thresh, aRT,45,'r','linewidth',2)
-    axis([.4 length(thresh)+0.6 min(union(aRT,simMeanRT))-0.1 max(union(aRT,simMeanRT))+0.1]);
-    if length(thresh)>1
+if doPlots
+  
+    % CDF plot - LEFT: all trials, RIGHT: conditional on threshold-crossing
+        % (if multiple uniform thresholds, only plotting the CDFs for the final threshold)
+        figure
+        subplot(1,2,1);
+        if runSimulations
+            plot(simCDF_T{jj}, simCDF_Y{jj},'k','linewidth',2);
+        end
+        hold on
+        plot(aCDF_T{jj},aCDF_Y{jj}, 'r--','linewidth',2)
+        xlabel('Decision Time'); ylabel('CDF')
+        if runSimulations
+            legend('Simulation', 'Analytic','location','best')
+        else
+            legend('Analytic','location','best')
+        end
+        xlim([0 max(aCDF_T{jj})]);
+        ylim([0 1]);
+        set(gca,'TickDir','out');
+        set(gca,'Box','off');
+        
+        subplot(1,2,2);
+        if runSimulations
+            plot(simCDF_T_plus{jj}, simCDF_Y_plus{jj},'g','linewidth',2);
+            hold on
+            plot(simCDF_T_minus{jj}, simCDF_Y_minus{jj},'r','linewidth',2);
+        end
+        hold on
+        plot(aCDF_T{jj},aCDF_Y_plus{jj}, 'g--','linewidth',2)
+        plot(aCDF_T{jj},aCDF_Y_minus{jj}, 'r--','linewidth',2)
+        xlabel('Decision Time'); ylabel('CDF')
+        xlim([0 max(aCDF_T{jj})]);
+        if runSimulations
+            legend('Pos-Simulation','Neg-Simulation', 'Pos-Analytic', 'Neg-Analytic','location','best')
+        else
+            legend('Pos-Analytic','Neg-Analytic','location','best')
+        end
+        set(gca,'TickDir','out');
+        set(gca,'Box','off');
+        
+        
+        % Expected ER/DT (across uniform thresholds) - LEFT: expected DT (all), MID: expected ER (all), RIGHT: expected DT (conditional)
+        figure
+        subplot(1,3,1);
+        hold on
+        if runSimulations
+            plot(thresh, simMeanRT,'k','linewidth',3)
+        end
+        plot(thresh, aRT,'r','linewidth',3)
+        axis([.4 length(thresh)+0.6 min(union(aRT,simMeanRT))-0.1 max(union(aRT,simMeanRT))+0.1]);
+        if length(thresh)>1
+            xlim([min(thresh) max(thresh)]);
+        else
+            xlim([thresh-1 thresh+1]);
+        end
+        if runSimulations
+            legend('Simulation', 'Analytic','location','best')
+        else
+            legend('Analytic','location','best')
+        end
+        if runSimulations
+            scatter(thresh, simMeanRT,45,'k','filled')
+        end
+        scatter(thresh, aRT,45,'r','linewidth',2)
         xlabel('Threshold');
-        xlim([min(thresh) max(thresh)]);
-    end
-    ylabel('Expected Decision Time')
-    if runSimulations
-        legend('Simulation', 'Analytic','location','best')
-    else
-        legend('Analytic','location','best')
-    end   
-    set(gca,'TickDir','out');
-    set(gca,'Box','off');
-    subplot(1,3,2);
-    hold on
-    if runSimulations
-        plot(thresh, simMeanER,'k','linewidth',3)
-        scatter(thresh, simMeanER,45,'k','filled')
-    end
-    plot(thresh, aER,'r','linewidth',3)
-    scatter(thresh, aER,45,'r','linewidth',2)
-    axis([.4 length(thresh)+0.6 min(union(aER,simMeanER))-0.05 max(union(aER,simMeanER))+0.05]);
-    if length(thresh)>1
+        ylabel('Expected Decision Time')
+        set(gca,'TickDir','out');
+        set(gca,'Box','off');
+        
+        subplot(1,3,2);
+        hold on
+        if runSimulations
+            plot(thresh, simMeanER,'k','linewidth',3)
+        end
+        plot(thresh, aER,'r','linewidth',3)
+        axis([.4 length(thresh)+0.6 min(union(aER,simMeanER))-0.05 max(union(aER,simMeanER))+0.05]);
+        if length(thresh)>1
+            xlim([min(thresh) max(thresh)]);
+        else
+            xlim([thresh-1 thresh+1]);
+        end
+        if runSimulations
+            legend('Simulation', 'Analytic','location','best')
+        else
+            legend('Analytic','location','best')
+        end
+        if runSimulations
+            scatter(thresh, simMeanER,45,'k','filled')
+        end
+        scatter(thresh, aER,45,'r','linewidth',2)
         xlabel('Threshold');
-        xlim([min(thresh) max(thresh)]);
-    end
-    ylabel('Error Rate')
-    if runSimulations
-        legend('Simulation', 'Analytic','location','best')
-    else
-        legend('Analytic','location','best')
-    end
-    set(gca,'TickDir','out');
-    set(gca,'Box','off');
-    subplot(1,3,3);
-    hold on
-    if runSimulations
-        plot(thresh, simMeanRT_plus,'g','linewidth',3)
-        scatter(thresh, simMeanRT_plus,45,'g','filled')
-        plot(thresh, simMeanRT_minus,'r','linewidth',3)
-        scatter(thresh, simMeanRT_minus,45,'r','filled')
-    end
-    hold on
-    plot(thresh, aRT_plus,'g--','linewidth',3)
-    plot(thresh, aRT_minus,'r--','linewidth',3)
-    scatter(thresh, aRT_plus,45,'g','linewidth',2)
-    scatter(thresh, aRT_minus,45,'r','linewidth',2)
-    axis([.4 length(thresh)+0.6 min([aRT_plus,aRT_minus,simMeanRT_plus,simMeanRT_minus])-0.1 max([aRT_plus,aRT_minus,simMeanRT_plus,simMeanRT_minus])+0.1]);
-    if length(thresh)>1
+        ylabel('Error Rate')
+        set(gca,'TickDir','out');
+        set(gca,'Box','off');
+        
+        subplot(1,3,3);
+        hold on
+        if runSimulations
+            plot(thresh, simMeanRT_plus,'g','linewidth',3)
+            plot(thresh, simMeanRT_minus,'r','linewidth',3)
+        end
+        plot(thresh, aRT_plus,'g--','linewidth',3)
+        plot(thresh, aRT_minus,'r--','linewidth',3)
+        axis([.4 length(thresh)+0.6 min([aRT_plus,aRT_minus,simMeanRT_plus,simMeanRT_minus])-0.1 max([aRT_plus,aRT_minus,simMeanRT_plus,simMeanRT_minus])+0.1]);
+        if length(thresh)>1
+            xlim([min(thresh) max(thresh)]);
+        else
+            xlim([thresh-1 thresh+1]);
+        end
+        if runSimulations
+            legend('Pos-Simulation','Neg-Simulation', 'Pos-Analytic','Neg-Analytic','location','best')
+        else
+            legend('Pos-Analytic','Neg-Analytic','location','best')
+        end
+        scatter(thresh, aRT_plus,45,'g','linewidth',2)
+        scatter(thresh, aRT_minus,45,'r','linewidth',2)
+        if runSimulations
+            scatter(thresh, simMeanRT_plus,45,'g','filled')
+            scatter(thresh, simMeanRT_minus,45,'r','filled')
+        end
         xlabel('Threshold');
-        xlim([min(thresh) max(thresh)]);
-    end
-    ylabel('Expected Decision Time')
-    if runSimulations
-        legend('Pos-Simulation','Neg-Simulation', 'Pos-Analytic','Neg-Analytic','location','best')
-    else
-        legend('Pos-Analytic','Neg-Analytic','location','best')
-    end  
-    set(gca,'TickDir','out');
-    set(gca,'Box','off');
+        ylabel('Expected Decision Time')
+        set(gca,'TickDir','out');
+        set(gca,'Box','off');
 
 end
